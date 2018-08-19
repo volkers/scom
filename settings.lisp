@@ -1,0 +1,131 @@
+;;;; settings.lisp
+
+#|
+    Copyright (C) 2018 Volker Sarodnick
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+|#
+
+(in-package #:scom)
+
+(defclass sdevice ()
+  ((name :accessor name :initarg :name)
+   (baudrate :accessor baudrate :initarg :baudrate)
+   (baudrate-vals :reader baudrate-vals :initform '("1200" "4800" "9600" "19200" "38400" "57600" "115200" "Custom"))
+   (flow-control :accessor flow-control :initarg :flow-control)
+   (flow-control-vals :reader flow-control-vals :initform '("On" "Off"))
+   (data-bits :accessor data-bits :initarg :data-bits)
+   (data-bits-vals :reader data-bits-vals :initform '("5" "6" "7" "8"))
+   (parity :accessor parity :initarg :parity)
+   (parity-vals :reader parity-vals :initform '("None" "Even" "Odd")))
+  (:documentation "Settings of serial device"))
+
+(defun make-sdevice (name)
+  (let* ((s-string (uiop:run-program (list "stty" "-a" "-F" name) :output :string))
+         (baudrate (first (cl-ppcre:all-matches-as-strings "\\d+(?= baud)" s-string)))
+         (flow-control (if (search "-ixon" s-string)
+                           "Off"
+                           "On"))
+         (data-bits (first (cl-ppcre:all-matches-as-strings "(?<= cs)\\d" s-string)))
+         (parity (cond ((search "-parenb" s-string) "None")
+                       ((search "-parodd" s-string) "Even")
+                       (t "Odd"))))
+    ;; (format t "~a~%" s-string)
+    (make-instance 'sdevice :name name
+                            :baudrate baudrate
+                            :flow-control flow-control
+                            :data-bits data-bits
+                            :parity parity)))
+
+(defmethod print-object ((sd sdevice) stream)
+  (format stream "#<~s name: ~a baudrate: ~a flow-control: ~a data-bits: ~a parity: ~a>"
+          (type-of sd)
+          (if (slot-boundp sd 'name)
+              (name sd)
+              "(no name)")
+          (if (slot-boundp sd 'baudrate)
+              (baudrate sd)
+              "(no baudrate)")
+          (if (slot-boundp sd 'flow-control)
+              (flow-control sd)
+              "(no flow-control)")
+          (if (slot-boundp sd 'data-bits)
+              (data-bits sd)
+              "(no data-bits)")
+          (if (slot-boundp sd 'parity)
+              (parity sd)
+              "(undefined parity)")))
+
+(defgeneric write-to-device (sdevice)
+  (:documentation "Writes the settings back to the device."))
+
+(defmethod write-to-device ((sd sdevice))
+  ;; set some sensible defaults:
+  (let ((std-options (list "raw" "-brkint" "igncr" "-imaxbel" "-echo" "min" "0" "time" "1"))
+        (speed (baudrate sd))
+        (ixon (if (string= "Off" (flow-control sd))
+                  "-ixon"
+                  "ixon"))
+        (parenb (if (string= "None" (parity sd))
+                    "-parenb"
+                    "parenb"))
+        (parodd (if (string= "Even" (parity sd))
+                    "-parodd"
+                    "parodd"))
+        (csn (concatenate 'string "cs" (data-bits sd))))
+    (uiop:run-program (append (list "stty" "-F" (name sd)) std-options (list speed ixon csn parenb parodd)))))
+
+(defun apply-changes (sdev baud-cb flow-cb data-bits-cb parity-cb)
+  (setf (baudrate sdev) (ltk:text baud-cb))
+  (setf (flow-control sdev) (ltk:text flow-cb))
+  (setf (data-bits sdev) (ltk:text data-bits-cb))
+  (setf (parity sdev) (ltk:text parity-cb))
+  (write-to-device sdev))
+
+
+(defun settings (dev-name)
+  (ltk:with-modal-toplevel (tl :title dev-name)
+    (let* ((sdev (make-sdevice dev-name))
+           (f (make-instance 'ltk:frame :master tl))
+           (baud-label (make-instance 'ltk:label :master f :text "Baudrate"))
+           (baud-combo (make-instance 'ltk:combobox :master f :text (baudrate sdev) :values (baudrate-vals sdev)))
+           (flow-label (make-instance 'ltk:label :master f :text "Flow Control"))
+           (flow-combo (make-instance 'ltk:combobox :master f :text (flow-control sdev) :values (flow-control-vals sdev)))
+           (data-bits-label (make-instance 'ltk:label :master f :text "Data-Bits"))
+           (data-bits-combo (make-instance 'ltk:combobox :master f :text (data-bits sdev) :values (data-bits-vals sdev)))
+           (parity-label (make-instance 'ltk:label :master f :text "Parity"))
+           (parity-combo (make-instance 'ltk:combobox :master f :text (parity sdev) :values (parity-vals sdev)))
+           (cancel-b (make-instance 'ltk:button
+                                    :master tl
+                                    :text "Cancel"
+                                    :command (lambda () (return))))
+           (apply-b (make-instance 'ltk:button
+                                    :master tl
+                                    :text "Apply"
+                                    :command (lambda ()
+                                               (apply-changes sdev baud-combo flow-combo data-bits-combo parity-combo)
+                                               (return)))))
+      (ltk:pack f)
+      (ltk:grid baud-label 0 0 :sticky "w")
+      (ltk:grid baud-combo 0 1 :sticky "w")
+      (ltk:grid flow-label 1 0 :sticky "w")
+      (ltk:grid flow-combo 1 1 :sticky "w")
+      (ltk:grid data-bits-label 2 0 :sticky "w")
+      (ltk:grid data-bits-combo 2 1 :sticky "w")
+      (ltk:grid parity-label 3 0 :sticky "w")
+      (ltk:grid parity-combo 3 1 :sticky "w")
+      (ltk:pack apply-b :side :right :padx 2)
+      (ltk:pack cancel-b :side :right :padx 2))))
+
+
