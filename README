@@ -1,0 +1,27 @@
+# scom
+
+Serial communication terminal for Linux.
+
+Cutecom is really nice and I used it a lot. But I needed some
+improvements and was interested trying it in Common Lisp and started
+this project.
+
+It is still at a very early stage though...
+
+## Usage
+
+Run make and use the created binary scom.
+
+Sorry, there is no help yet.
+
+## Dependencies
+
+stty, sbcl and some libraries from quicklisp.
+
+## License
+
+Copyright (C) 2018 Volker Sarodnick
+
+mail: (remove #\y (subseq "avoidspamyvolykerysyar@gymyx.net" 9))
+
+GNU General Public License
