@@ -28,7 +28,9 @@
    (data-bits :accessor data-bits :initarg :data-bits)
    (data-bits-vals :reader data-bits-vals :initform '("5" "6" "7" "8"))
    (parity :accessor parity :initarg :parity)
-   (parity-vals :reader parity-vals :initform '("None" "Even" "Odd")))
+   (parity-vals :reader parity-vals :initform '("None" "Even" "Odd"))
+   (stop-bits :accessor stop-bits :initarg :stop-bits)
+   (stop-bits-vals :reader stop-bits-vals :initform '("1" "2")))
   (:documentation "Settings of serial device"))
 
 (defun make-sdevice (name)
@@ -40,16 +42,20 @@
          (data-bits (first (cl-ppcre:all-matches-as-strings "(?<= cs)\\d" s-string)))
          (parity (cond ((search "-parenb" s-string) "None")
                        ((search "-parodd" s-string) "Even")
-                       (t "Odd"))))
+                       (t "Odd")))
+         (stop-bits (if (search "-cstopb" s-string)
+                        "1"
+                        "2")))
     ;; (format t "~a~%" s-string)
     (make-instance 'sdevice :name name
                             :baudrate baudrate
                             :flow-control flow-control
                             :data-bits data-bits
-                            :parity parity)))
+                            :parity parity
+                            :stop-bits stop-bits)))
 
 (defmethod print-object ((sd sdevice) stream)
-  (format stream "#<~s name: ~a baudrate: ~a flow-control: ~a data-bits: ~a parity: ~a>"
+  (format stream "#<~s name: ~a baudrate: ~a flow-control: ~a data-bits: ~a parity: ~a stop-bits: ~a>"
           (type-of sd)
           (if (slot-boundp sd 'name)
               (name sd)
@@ -65,7 +71,10 @@
               "(no data-bits)")
           (if (slot-boundp sd 'parity)
               (parity sd)
-              "(undefined parity)")))
+              "(undefined parity)")
+          (if (slot-boundp sd 'stop-bits)
+              (stop-bits sd)
+              "(undefined number of stop-bits)")))
 
 (defgeneric write-to-device (sdevice)
   (:documentation "Writes the settings back to the device."))
@@ -77,20 +86,24 @@
         (ixon (if (string= "Off" (flow-control sd))
                   "-ixon"
                   "ixon"))
+        (csn (concatenate 'string "cs" (data-bits sd)))
         (parenb (if (string= "None" (parity sd))
                     "-parenb"
                     "parenb"))
         (parodd (if (string= "Even" (parity sd))
                     "-parodd"
                     "parodd"))
-        (csn (concatenate 'string "cs" (data-bits sd))))
-    (uiop:run-program (append (list "stty" "-F" (name sd)) std-options (list speed ixon csn parenb parodd)))))
+        (cstopb (if (string= "1" (stop-bits sd))
+                    "-cstopb"
+                    "cstopb")))
+    (uiop:run-program (append (list "stty" "-F" (name sd)) std-options (list speed ixon csn parenb parodd cstopb)))))
 
-(defun apply-changes (sdev baud-cb flow-cb data-bits-cb parity-cb)
+(defun apply-changes (sdev baud-cb flow-cb data-bits-cb parity-cb stop-bits-cb)
   (setf (baudrate sdev) (ltk:text baud-cb))
   (setf (flow-control sdev) (ltk:text flow-cb))
   (setf (data-bits sdev) (ltk:text data-bits-cb))
   (setf (parity sdev) (ltk:text parity-cb))
+  (setf (stop-bits sdev) (ltk:text stop-bits-cb))
   (write-to-device sdev))
 
 
@@ -102,10 +115,12 @@
            (baud-combo (make-instance 'ltk:combobox :master f :text (baudrate sdev) :values (baudrate-vals sdev)))
            (flow-label (make-instance 'ltk:label :master f :text "Flow Control"))
            (flow-combo (make-instance 'ltk:combobox :master f :text (flow-control sdev) :values (flow-control-vals sdev)))
-           (data-bits-label (make-instance 'ltk:label :master f :text "Data-Bits"))
+           (data-bits-label (make-instance 'ltk:label :master f :text "Data Bits"))
            (data-bits-combo (make-instance 'ltk:combobox :master f :text (data-bits sdev) :values (data-bits-vals sdev)))
            (parity-label (make-instance 'ltk:label :master f :text "Parity"))
            (parity-combo (make-instance 'ltk:combobox :master f :text (parity sdev) :values (parity-vals sdev)))
+           (stop-bits-label (make-instance 'ltk:label :master f :text "Stop bits"))
+           (stop-bits-combo (make-instance 'ltk:combobox :master f :text (stop-bits sdev) :values (stop-bits-vals sdev)))
            (cancel-b (make-instance 'ltk:button
                                     :master tl
                                     :text "Cancel"
@@ -114,7 +129,7 @@
                                     :master tl
                                     :text "Apply"
                                     :command (lambda ()
-                                               (apply-changes sdev baud-combo flow-combo data-bits-combo parity-combo)
+                                               (apply-changes sdev baud-combo flow-combo data-bits-combo parity-combo stop-bits-combo)
                                                (return)))))
       (ltk:pack f)
       (ltk:grid baud-label 0 0 :sticky "w")
@@ -125,6 +140,8 @@
       (ltk:grid data-bits-combo 2 1 :sticky "w")
       (ltk:grid parity-label 3 0 :sticky "w")
       (ltk:grid parity-combo 3 1 :sticky "w")
+      (ltk:grid stop-bits-label 3 0 :sticky "w")
+      (ltk:grid stop-bits-combo 3 1 :sticky "w")
       (ltk:pack apply-b :side :right :padx 2)
       (ltk:pack cancel-b :side :right :padx 2))))
 
