@@ -32,6 +32,10 @@
 
 (load "settings")
 
+(defvar *serial-stream* nil)
+(defvar *outconsole-hex* nil)
+(defvar *outconsole-ascii* nil)
+
 (defmacro printoutln (text-widget print-text)
   `(progn
      (ltk:append-text ,text-widget ,print-text)
@@ -57,9 +61,15 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
     (assert (evenp (length without-spaces)))
     (hex-str-to-byte-list without-spaces)))
 
-(defvar *serial-stream* nil)
-(defvar *outconsole-hex* nil)
-(defvar *outconsole-ascii* nil)
+(defun send (b-list)
+  "Send byte list."
+  (when *serial-stream*
+    (loop for b in b-list do (write-byte b *serial-stream*)))
+  (force-output *serial-stream*))
+
+(defun convert-and-send (txt)
+  "Convert text to byte-list and send it."
+  (send (hex-to-bytes txt)))
 
 (defun quit ()
   (when *serial-stream*
@@ -120,10 +130,7 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
            (cmd-lbl (make-instance 'ltk:label :master cmd-fr :text "Input:"))
            (cmd-entry (make-instance 'ltk-mw:history-entry :master cmd-fr
                                                            :state :disabled
-                                                           :command (lambda (txt) (when *serial-stream*
-                                                                                    (let ((b-list (hex-to-bytes txt)))
-                                                                                      (loop for b in b-list do (write-byte b *serial-stream*)))
-                                                                                    (force-output *serial-stream*)))))
+                                                           :command 'convert-and-send))
            ;; out frame
            (out-f (make-instance 'ltk:frame :borderwidth 2 :relief :raised))
            (outu-f (make-instance 'ltk:frame :master out-f))
