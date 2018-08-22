@@ -140,8 +140,8 @@
       (ltk:grid data-bits-combo 2 1 :sticky "w")
       (ltk:grid parity-label 3 0 :sticky "w")
       (ltk:grid parity-combo 3 1 :sticky "w")
-      (ltk:grid stop-bits-label 3 0 :sticky "w")
-      (ltk:grid stop-bits-combo 3 1 :sticky "w")
+      (ltk:grid stop-bits-label 4 0 :sticky "w")
+      (ltk:grid stop-bits-combo 4 1 :sticky "w")
       (ltk:pack apply-b :side :right :padx 2)
       (ltk:pack cancel-b :side :right :padx 2))))
 
