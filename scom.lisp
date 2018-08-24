@@ -35,6 +35,7 @@
 (defvar *serial-stream* nil)
 (defvar *outconsole-hex* nil)
 (defvar *outconsole-ascii* nil)
+(defparameter *s-lock* (bordeaux-threads:make-lock))
 
 (defmacro printoutln (text-widget print-text)
   `(progn
@@ -58,14 +59,20 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
          (normalized-0x (cl-ppcre:regex-replace-all "0x(?=\[\\dabcdefABCDEF\]\\b)" normalized-0 "0")) ; 0x2 -> 02
          (without-0x (cl-ppcre:regex-replace-all "0x" normalized-0x ""))
          (without-spaces (remove #\space without-0x)))
-    (assert (evenp (length without-spaces)))
-    (hex-str-to-byte-list without-spaces)))
+    (if (evenp (length without-spaces))
+        (hex-str-to-byte-list without-spaces)
+        (and
+         (ltk:do-msg "Number of digits odd, can't be decoded to bytes. Check your input! Message dropped.")
+         nil))))
 
 (defun send (b-list)
   "Send byte list."
-  (when *serial-stream*
-    (loop for b in b-list do (write-byte b *serial-stream*)))
-  (force-output *serial-stream*))
+  (and
+   b-list ; no idea to take the lock if b-list is empty
+   (bordeaux-threads:with-lock-held (*s-lock*)
+     (when *serial-stream*
+       (loop for b in b-list do (write-byte b *serial-stream*))
+       (force-output *serial-stream*)))))
 
 (defun convert-and-send (txt)
   "Convert text to byte-list and send it."
