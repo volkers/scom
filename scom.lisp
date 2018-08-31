@@ -175,6 +175,7 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
       (setq cmd-entry-handle cmd-entry)
       (setq menu-settings-handle mf-settings)
       (ltk:wm-title ltk:*tk* "scom")
+      (ltk:on-close ltk:*tk* 'quit)
       (ltk:bind ltk:*tk* "<Alt-q>" (lambda (event) (declare (ignore event)) (quit)))
       (ltk:bind ltk:*tk* "<Alt-s>" (lambda (event) (declare (ignore event)) (unless *serial-stream*
                                                                               (settings (ltk:text dev-name)))))
