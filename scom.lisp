@@ -30,53 +30,14 @@
 
 (in-package #:scom)
 
-(load "settings")
-
 (defvar *serial-stream* nil)
 (defvar *outconsole-hex* nil)
 (defvar *outconsole-ascii* nil)
 (defparameter *s-lock* (bordeaux-threads:make-lock))
 
-(defmacro printoutln (text-widget print-text)
-  `(progn
-     (ltk:append-text ,text-widget ,print-text)
-     (ltk:append-newline ,text-widget)))
-
-(defun hex-str-to-byte-list (str)
-  "Convert a string of digits to the corresponding list of bytes coding the pairs of numbers in the string.
-E.g. \"0a41\" -> (list #x0a #x41)."
-  (cond
-    ((zerop (length str)) nil)
-    (t (let ((i (parse-integer str :end 2 :radix 16)))
-         (cons i
-               (hex-str-to-byte-list (subseq str 2)))))))
-
-(defun hex-to-bytes (hex-string)
-  "Convert hexadecimal numbers to a list of bytes.
-Spaces and '0x' tokens are removed, absent leading 0's in 0x\d are inserted.
-Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
-  (let* ((normalized-0 (cl-ppcre:regex-replace-all " (?=\[\\dabcdefABCDEF\]\\b)" hex-string "0")) ; 2 -> 02
-         (normalized-0x (cl-ppcre:regex-replace-all "0x(?=\[\\dabcdefABCDEF\]\\b)" normalized-0 "0")) ; 0x2 -> 02
-         (without-0x (cl-ppcre:regex-replace-all "0x" normalized-0x ""))
-         (without-spaces (remove #\space without-0x)))
-    (if (evenp (length without-spaces))
-        (hex-str-to-byte-list without-spaces)
-        (and
-         (ltk:do-msg "Number of digits odd, can't be decoded to bytes. Check your input! Message dropped.")
-         nil))))
-
-(defun send (b-list)
-  "Send byte list."
-  (and
-   b-list ; no idea to take the lock if b-list is empty
-   (bordeaux-threads:with-lock-held (*s-lock*)
-     (when *serial-stream*
-       (loop for b in b-list do (write-byte b *serial-stream*))
-       (force-output *serial-stream*)))))
-
-(defun convert-and-send (txt)
-  "Convert text to byte-list and send it."
-  (send (hex-to-bytes txt)))
+(load "settings")
+(load "sending")
+(load "periodic")
 
 (defun quit ()
   (when *serial-stream*
@@ -110,6 +71,8 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
     (let* ((open-button-handle nil)
            (cmd-entry-handle nil)
            (menu-settings-handle nil)
+           (periodic-1-button-handle nil)
+           (periodic-1 nil)
            ;; device bar
            (bar (make-instance 'ltk:frame))
            (dev-name (make-instance 'ltk:combobox :master bar :text "/dev/ttyS0" :values '("/dev/ttyUSB0" "/dev/ttyS0")))
@@ -138,6 +101,25 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
            (cmd-entry (make-instance 'ltk-mw:history-entry :master cmd-fr
                                                            :state :disabled
                                                            :command 'convert-and-send))
+           ;; periodic cmd frame
+           (p-cmd-fr (make-instance 'ltk:frame :borderwidth 2 :relief :raised))
+           (p-cmd-lbl (make-instance 'ltk:label :master p-cmd-fr :text "Periodic Input:"))
+           (p-cmd-entry (make-instance 'ltk:entry :master p-cmd-fr
+                                                  :state :normal))
+           (p-cmd-p-lbl (make-instance 'ltk:label :master p-cmd-fr :text "Period [s]:"))
+           (p-cmd-p-entry (make-instance 'ltk:entry :master p-cmd-fr
+                                                    :state :normal))
+           (p-cmd-button (make-instance 'ltk:button :master p-cmd-fr :text "Start"
+                                                    :command (lambda ()
+                                                               (if periodic-1
+                                                                   (progn
+                                                                     (stop periodic-1)
+                                                                     (setf (ltk:text periodic-1-button-handle) "Start")
+                                                                     (setq periodic-1 nil))
+                                                                   (progn
+                                                                     (setq periodic-1 (make-periodic (ltk:text p-cmd-entry)
+                                                                                                     (ltk:text p-cmd-p-entry)))
+                                                                     (setf (ltk:text periodic-1-button-handle) "Stop"))))))
            ;; out frame
            (out-f (make-instance 'ltk:frame :borderwidth 2 :relief :raised))
            (outu-f (make-instance 'ltk:frame :master out-f))
@@ -174,6 +156,7 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
       (setq open-button-handle open-button)
       (setq cmd-entry-handle cmd-entry)
       (setq menu-settings-handle mf-settings)
+      (setq periodic-1-button-handle p-cmd-button)
       (ltk:wm-title ltk:*tk* "scom")
       (ltk:on-close ltk:*tk* 'quit)
       (ltk:bind ltk:*tk* "<Alt-q>" (lambda (event) (declare (ignore event)) (quit)))
@@ -186,6 +169,12 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
       (ltk:pack cmd-fr :fill :x :side :top)
       (ltk:pack cmd-lbl :side :left :padx 2)
       (ltk:pack cmd-entry :side :left :fill :x :padx 2 :expand t)
+      (ltk:pack p-cmd-fr :fill :x :side :top)
+      (ltk:pack p-cmd-lbl :side :left :padx 2)
+      (ltk:pack p-cmd-entry :side :left :fill :x :padx 2 :expand t)
+      (ltk:pack p-cmd-p-lbl :side :left :padx 2)
+      (ltk:pack p-cmd-p-entry :side :left :padx 2 :expand t)
+      (ltk:pack p-cmd-button :side :left :padx 2)
       (ltk:pack out-f :fill :both :expand t)
       (ltk:pack outu-f :fill :x :side :top :anchor :w)
       (ltk:pack out-lbl :side :left :padx 2)
