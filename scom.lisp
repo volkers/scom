@@ -105,6 +105,10 @@
            (cmd-ascii-hex (make-instance 'ltk:combobox :master cmd-fr
                                                        :width 8
                                                        :text "Hex" :values '("LF" "CR" "CR/LF" "None" "Hex")))
+           (cmd-send-button (make-instance 'ltk:button :master cmd-fr
+                                                       :text "Send"
+                                                       :command (lambda ()
+                                                                  (convert-and-send (ltk:text cmd-entry)))))
            ;; periodic cmd frame
            (p-cmd-fr (make-instance 'ltk:frame :borderwidth 2 :relief :raised))
            (p-cmd-lbl (make-instance 'ltk:label :master p-cmd-fr :text "Periodic Input:"))
@@ -178,6 +182,7 @@
       (ltk:bind cmd-ascii-hex "<<ComboboxSelected>>" (lambda (event)
                                                        (declare (ignore event))
                                                        (setq *input-ascii-hex* (ltk:text cmd-ascii-hex))))
+      (ltk:pack cmd-send-button :side :left :padx 2)
       (ltk:pack p-cmd-fr :fill :x :side :top)
       (ltk:pack p-cmd-lbl :side :left :padx 2)
       (ltk:pack p-cmd-entry :side :left :fill :x :padx 2 :expand t)
