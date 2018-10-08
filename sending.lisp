@@ -42,7 +42,7 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
          (ltk:do-msg "Number of digits odd, can't be decoded to bytes. Check your input! Message dropped.")
          nil))))
 
-(defun send (b-list)
+(defun send-b-list (b-list)
   "Send byte list."
   (and
    b-list ; no idea to take the lock if b-list is empty
@@ -51,6 +51,19 @@ Ex.: \"0xa 0x41 7d\" -> \"0a417d\" -> (list #xa #x41 #x7d})"
        (loop for b in b-list do (write-byte b *serial-stream*))
        (force-output *serial-stream*)))))
 
+(defun send-ascii (ascii-string)
+  "Send ascii-string."
+  (bordeaux-threads:with-lock-held (*s-lock*)
+    (format *serial-stream* "~a" ascii-string)
+    (force-output *serial-stream*)))
+
 (defun convert-and-send (txt)
   "Convert text to byte-list and send it."
-  (send (hex-to-bytes txt)))
+  (cond
+    ((string= *input-ascii-hex* "Hex") (send-b-list (hex-to-bytes txt)))
+    ((string= *input-ascii-hex* "None") (send-ascii txt))
+    ((string= *input-ascii-hex* "LF") (send-ascii (format nil "~a~c" txt #\linefeed)))
+    ((string= *input-ascii-hex* "CR") (send-ascii (format nil "~a~c" txt #\return)))
+    ((string= *input-ascii-hex* "CR/LF") (send-ascii (format nil "~a~c~c" txt #\return #\linefeed)))
+    (t (error "Not supported input type or line ending"))))
+

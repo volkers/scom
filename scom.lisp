@@ -33,6 +33,7 @@
 (defvar *serial-stream* nil)
 (defvar *outconsole-hex* nil)
 (defvar *outconsole-ascii* nil)
+(defvar *input-ascii-hex* nil)
 (defparameter *s-lock* (bordeaux-threads:make-lock))
 
 (load "settings")
@@ -101,6 +102,9 @@
            (cmd-entry (make-instance 'ltk-mw:history-entry :master cmd-fr
                                                            :state :disabled
                                                            :command 'convert-and-send))
+           (cmd-ascii-hex (make-instance 'ltk:combobox :master cmd-fr
+                                                       :width 8
+                                                       :text "Hex" :values '("LF" "CR" "CR/LF" "None" "Hex")))
            ;; periodic cmd frame
            (p-cmd-fr (make-instance 'ltk:frame :borderwidth 2 :relief :raised))
            (p-cmd-lbl (make-instance 'ltk:label :master p-cmd-fr :text "Periodic Input:"))
@@ -169,6 +173,11 @@
       (ltk:pack cmd-fr :fill :x :side :top)
       (ltk:pack cmd-lbl :side :left :padx 2)
       (ltk:pack cmd-entry :side :left :fill :x :padx 2 :expand t)
+      (ltk:pack cmd-ascii-hex :side :left :padx 2)
+      (setq *input-ascii-hex* (ltk:text cmd-ascii-hex))
+      (ltk:bind cmd-ascii-hex "<<ComboboxSelected>>" (lambda (event)
+                                                       (declare (ignore event))
+                                                       (setq *input-ascii-hex* (ltk:text cmd-ascii-hex))))
       (ltk:pack p-cmd-fr :fill :x :side :top)
       (ltk:pack p-cmd-lbl :side :left :padx 2)
       (ltk:pack p-cmd-entry :side :left :fill :x :padx 2 :expand t)
