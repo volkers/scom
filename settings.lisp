@@ -33,6 +33,16 @@
    (stop-bits-vals :reader stop-bits-vals :initform '("1" "2")))
   (:documentation "Settings of serial device"))
 
+(defun get-dev-list ()
+  "Return a list of serial device files, e.g. (\"/dev/ttyS0\" ... \"/dev/ttyUSB0\")."
+  ;; there seems to be a problem with using wildcards in uiop:run-program
+  ;; therefore ppcre is used to filter instead
+  ;; maybe this could be implemented much simpler...
+  (mapcar #'(lambda (devs) (concatenate 'string "/dev/" devs))
+          (cl-ppcre:all-matches-as-strings "(ttyS.+)\|(ttyUSB.+)"
+                                           (uiop:run-program (list "ls" "/dev")
+                                                             :output :string))))
+
 (defun make-sdevice (name)
   (let* ((s-string (uiop:run-program (list "stty" "-a" "-F" name) :output :string))
          (baudrate (first (cl-ppcre:all-matches-as-strings "\\d+(?= baud)" s-string)))

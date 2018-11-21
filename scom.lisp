@@ -3,7 +3,7 @@
 #|
     Copyright (C) 2018 Volker Sarodnick
 
-    This program is free software: you can redistribute it and/or modify
+   This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -76,7 +76,8 @@
            (periodic-1 nil)
            ;; device bar
            (bar (make-instance 'ltk:frame))
-           (dev-name (make-instance 'ltk:combobox :master bar :text "/dev/ttyS0" :values '("/dev/ttyUSB0" "/dev/ttyS0")))
+           (dev-list (get-dev-list))
+           (dev-name (make-instance 'ltk:combobox :master bar :text (first dev-list) :values dev-list))
            (open-button (make-instance 'ltk:button :master bar :text "Open"
                                                    :command (lambda ()
                                                               (if *serial-stream*
@@ -174,6 +175,12 @@
       (ltk:pack bar :side :top :anchor :w)
       (ltk:pack open-button :side :left)
       (ltk:pack dev-name :side :left)
+      ;; update device list when mouse is entering the combo-box field
+      ;; problem: it's not updated when pressing, so you need to move the mouse into the field to get the new vals
+      (ltk:bind dev-name "<Enter>" (lambda (evt)
+                                     (declare (ignore evt))
+                                     (setf (ltk:options dev-name) (get-dev-list))))
+
       (ltk:pack cmd-fr :fill :x :side :top)
       (ltk:pack cmd-lbl :side :left :padx 2)
       (ltk:pack cmd-entry :side :left :fill :x :padx 2 :expand t)
