@@ -3,7 +3,7 @@
 #|
     Copyright (C) 2018 Volker Sarodnick
 
-   This program is free software: you can redistribute it and/or modify
+    This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -47,10 +47,12 @@
   (setf ltk:*exit-mainloop* t))
 
 (defun help ()
-  (format t "Help called!~%"))
+  (ltk:do-msg "Sorry, not implemented yet."))
 
 (defun about ()
-  (format t "About called!~%"))
+  (ltk:do-msg "This is scom, a serial communication terminal for Linux.
+Copyright (C) 2018 Volker Sarodnick
+GNU General Public License"))
 
 (defun console-writer ()
   (unless ltk:*exit-mainloop*
