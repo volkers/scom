@@ -30,6 +30,8 @@
 
 (in-package #:scom)
 
+(setq ltk:*wish-args* '("-name" "scom"))
+
 (defvar *serial-stream* nil)
 (defvar *outconsole-hex* nil)
 (defvar *outconsole-ascii* nil)
