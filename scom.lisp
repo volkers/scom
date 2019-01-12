@@ -68,7 +68,9 @@ GNU General Public License"))
                        (ltk:append-text *outconsole-ascii* (format nil "~a" (code-char c-byte))))))
       (when add-nl ;; add a newline after output
         (ltk:append-newline *outconsole-hex*)
-        (ltk:append-newline *outconsole-ascii*))
+        (ltk:append-newline *outconsole-ascii*)
+        (ltk:see *outconsole-hex* "end") ;; always show the last line
+        (ltk:see *outconsole-ascii* "end"))
       (ltk:after 100 'console-writer))))
 
 (defun main ()
