@@ -38,6 +38,7 @@
 (defvar *input-ascii-hex* nil)
 (defparameter *s-lock* (bordeaux-threads:make-lock))
 
+(load "help")
 (load "settings")
 (load "sending")
 (load "periodic")
@@ -47,9 +48,6 @@
     (close *serial-stream*)
     (setq *serial-stream* nil))
   (setf ltk:*exit-mainloop* t))
-
-(defun help ()
-  (ltk:do-msg "Sorry, not implemented yet."))
 
 (defun about ()
   (ltk:do-msg "This is scom, a serial communication terminal for Linux.
