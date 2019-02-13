@@ -156,3 +156,21 @@
       (ltk:pack cancel-b :side :right :padx 2))))
 
 
+(defun general-settings ()
+  (ltk:with-modal-toplevel (tl :title "General Settings")
+    (let* ((f (make-instance 'ltk:frame :master tl))
+           (pnum-label (make-instance 'ltk:label :master f :text "Number of Periodic (restart needed)"))
+           (pnum-entry (make-instance 'ltk:entry :master f :text "1"))
+           (cancel-b (make-instance 'ltk:button
+                                    :master tl
+                                    :text "Cancel"
+                                    :command (lambda () (return))))
+           (apply-b (make-instance 'ltk:button
+                                   :master tl
+                                   :text "Apply (Not working yet)"
+                                   :command (lambda () (return)))))
+      (ltk:pack f)
+      (ltk:grid pnum-label 0 0 :sticky "w")
+      (ltk:grid pnum-entry 0 1 :sticky "w")
+      (ltk:pack apply-b :side :right :padx 2)
+      (ltk:pack cancel-b :side :right :padx 2))))

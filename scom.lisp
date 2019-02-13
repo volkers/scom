@@ -129,14 +129,20 @@ GNU General Public License"))
            ;; menubar
            (mb (ltk:make-menubar))
            (mfile (ltk:make-menu mb "File"))
-           (mf-settings (ltk:make-menubutton mfile "Settings"
+           (mf-exit (ltk:make-menubutton mfile "Quit" 'quit
+                                         :underline 0
+                                         :accelerator "Alt q"))
+           (msettings (ltk:make-menu mb "Settings"))
+           (mf-general-settings (ltk:make-menubutton msettings "General Settings"
+                                                     (lambda () (unless *serial-stream*
+                                                                  (general-settings)))
+                                                     :underline 0
+                                                     :accelerator "Alt g"))
+           (mf-settings (ltk:make-menubutton msettings "Port Settings"
                                              (lambda () (unless *serial-stream*
                                                           (settings (ltk:text dev-name))))
                                              :underline 0
                                              :accelerator "Alt s"))
-           (mf-exit (ltk:make-menubutton mfile "Quit" 'quit
-                                         :underline 0
-                                         :accelerator "Alt q"))
            (mhelp (ltk:make-menu mb "Help"))
            (mh-help (ltk:make-menubutton mhelp "Help"
                                          'help
@@ -145,13 +151,15 @@ GNU General Public License"))
            (mh-about (ltk:make-menubutton mhelp "About"
                                           'about
                                           :underline 0)))
-      (declare (ignore mf-exit mh-help mh-about))
+      (declare (ignore mf-exit mf-general-settings mh-help mh-about))
       (setq open-button-handle open-button)
       (setq cmd-entry-handle cmd-entry)
       (setq menu-settings-handle mf-settings)
       (ltk:wm-title ltk:*tk* "scom")
       (ltk:on-close ltk:*tk* 'quit)
       (ltk:bind ltk:*tk* "<Alt-q>" (lambda (event) (declare (ignore event)) (quit)))
+      (ltk:bind ltk:*tk* "<Alt-g>" (lambda (event) (declare (ignore event)) (unless *serial-stream*
+                                                                              (general-settings))))
       (ltk:bind ltk:*tk* "<Alt-s>" (lambda (event) (declare (ignore event)) (unless *serial-stream*
                                                                               (settings (ltk:text dev-name)))))
       (ltk:bind ltk:*tk* "<Alt-h>" (lambda (event) (declare (ignore event)) (help)))
