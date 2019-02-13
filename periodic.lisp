@@ -45,3 +45,33 @@
 
 (defun make-periodic (cmd period)
   (make-instance 'periodic :cmd cmd :period (* 1000 (parse-integer period))))
+
+(defun make-periodic-frame ()
+  (let* ((channel)
+         (button-handle)
+         (cmd-fr (make-instance 'ltk:frame :borderwidth 2 :relief :raised))
+         (cmd-lbl (make-instance 'ltk:label :master cmd-fr :text "Periodic Input:"))
+         (cmd-entry (make-instance 'ltk:entry :master cmd-fr
+                                   :state :normal))
+         (cmd-p-lbl (make-instance 'ltk:label :master cmd-fr :text "Period [s]:"))
+         (cmd-p-entry (make-instance 'ltk:entry :master cmd-fr
+                                     :state :normal))
+         (cmd-button (make-instance 'ltk:button :master cmd-fr :text "Start"
+                                      :command (lambda ()
+                                                 (if channel
+                                                     (progn
+                                                       (stop channel)
+                                                       (setf (ltk:text button-handle) "Start")
+                                                       (setq channel nil))
+                                                     (progn
+                                                       (setq channel (make-periodic (ltk:text cmd-entry)
+                                                                                    (ltk:text cmd-p-entry)))
+                                                       (setf (ltk:text button-handle) "Stop")))))))
+    (setq button-handle cmd-button)
+    (ltk:pack cmd-lbl :side :left :padx 2)
+    (ltk:pack cmd-entry :side :left :fill :x :padx 2 :expand t)
+    (ltk:pack cmd-p-lbl :side :left :padx 2)
+    (ltk:pack cmd-p-entry :side :left :padx 2 :expand t)
+    (ltk:pack cmd-button :side :left :padx 2)
+    cmd-fr))
+
