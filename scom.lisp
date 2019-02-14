@@ -1,7 +1,7 @@
 ;;;; scom.lisp
 
 #|
-    Copyright (C) 2018 Volker Sarodnick
+    Copyright (C) 2019 Volker Sarodnick
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@
 
 (defun about ()
   (ltk:do-msg "This is scom, a serial communication terminal for Linux.
-Copyright (C) 2018 Volker Sarodnick
+Copyright (C) 2019 Volker Sarodnick
 GNU General Public License"))
 
 (defun console-writer ()
