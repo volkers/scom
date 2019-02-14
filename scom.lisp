@@ -135,8 +135,7 @@ GNU General Public License"))
                                          :accelerator "Alt q"))
            (msettings (ltk:make-menu mb "Settings"))
            (mf-general-settings (ltk:make-menubutton msettings "General Settings"
-                                                     (lambda () (unless *serial-stream*
-                                                                  (general-settings)))
+                                                     'general-settings
                                                      :underline 0
                                                      :accelerator "Alt g"))
            (mf-settings (ltk:make-menubutton msettings "Port Settings"
