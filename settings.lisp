@@ -19,6 +19,10 @@
 
 (in-package #:scom)
 
+(defvar *num-periodic* 1) ;; default number of periodic signals 1
+(defvar *settings-filename* "~/.scom")
+(defvar *num-periodic-token* "num-periodic:")
+
 (defclass sdevice ()
   ((name :accessor name :initarg :name)
    (baudrate :accessor baudrate :initarg :baudrate)
@@ -155,20 +159,39 @@
       (ltk:pack apply-b :side :right :padx 2)
       (ltk:pack cancel-b :side :right :padx 2))))
 
+(defun read-settings ()
+  (when (probe-file *settings-filename*)
+    (with-open-file (stream *settings-filename*
+                            :direction :input)
+      (let* ((line (read-line stream nil))
+             (pos (search *num-periodic-token* line))
+             (num))
+        (and pos
+             (setq num (parse-integer line :start (+ pos (length *num-periodic-token*))))
+             (setq *num-periodic* num)
+             (print num))))))
+
+(defun save-num-periodic (num)
+  (with-open-file (stream *settings-filename*
+                          :direction :output
+                          :if-exists :supersede)
+    (format stream "~a~a~%" *num-periodic-token* num)))
 
 (defun general-settings ()
   (ltk:with-modal-toplevel (tl :title "General Settings")
     (let* ((f (make-instance 'ltk:frame :master tl))
            (pnum-label (make-instance 'ltk:label :master f :text "Number of Periodic (restart needed)"))
-           (pnum-entry (make-instance 'ltk:entry :master f :text "1"))
+           (pnum-entry (make-instance 'ltk:entry :master f :text *num-periodic*))
            (cancel-b (make-instance 'ltk:button
                                     :master tl
                                     :text "Cancel"
                                     :command (lambda () (return))))
            (apply-b (make-instance 'ltk:button
                                    :master tl
-                                   :text "Apply (Not working yet)"
-                                   :command (lambda () (return)))))
+                                   :text "Apply"
+                                   :command (lambda ()
+                                              (save-num-periodic (ltk:text pnum-entry))
+                                              (return)))))
       (ltk:pack f)
       (ltk:grid pnum-label 0 0 :sticky "w")
       (ltk:grid pnum-entry 0 1 :sticky "w")
