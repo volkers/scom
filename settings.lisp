@@ -168,8 +168,7 @@
              (num))
         (and pos
              (setq num (parse-integer line :start (+ pos (length *num-periodic-token*))))
-             (setq *num-periodic* num)
-             (print num))))))
+             (setq *num-periodic* num))))))
 
 (defun save-num-periodic (num)
   (with-open-file (stream *settings-filename*
