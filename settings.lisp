@@ -95,7 +95,7 @@
 
 (defmethod write-to-device ((sd sdevice))
   ;; set some sensible defaults:
-  (let ((std-options (list "raw" "-brkint" "igncr" "-imaxbel" "-echo" "min" "0" "time" "1"))
+  (let ((std-options (list "raw" "-brkint" "-igncr" "-imaxbel" "-echo" "min" "0" "time" "1"))
         (speed (baudrate sd))
         (ixon (if (string= "Off" (flow-control sd))
                   "-ixon"
