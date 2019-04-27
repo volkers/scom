@@ -22,6 +22,7 @@
 (ql:quickload 'cl-ppcre)
 (ql:quickload 'ltk)
 (ql:quickload 'ltk-mw)
+(ql:quickload 'parse-float)
 (ql:quickload 'uiop)
 
 (defpackage #:scom

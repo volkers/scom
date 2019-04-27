@@ -44,7 +44,7 @@
   (ltk:after (slot-value per 'period) (lambda () (run-command per))))
 
 (defun make-periodic (cmd period)
-  (make-instance 'periodic :cmd cmd :period (* 1000 (parse-integer period))))
+  (make-instance 'periodic :cmd cmd :period (round (* 1000 (parse-float:parse-float period)))))
 
 (defun make-periodic-frame ()
   (let* ((channel)
