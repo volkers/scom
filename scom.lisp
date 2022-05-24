@@ -57,17 +57,15 @@ GNU General Public License"))
 
 (defun console-writer ()
   (unless ltk:*exit-mainloop*
-    (let ((add-nl nil))
+    (let ((show-end nil))
       (and *outconsole-hex*
            *serial-stream*
            (loop :while (listen *serial-stream*)
                  :do (let ((c-byte (read-byte *serial-stream*)))
-                       (setq add-nl t) ;; we got output
+                       (setq show-end t) ;; we got output
                        (ltk:append-text *outconsole-hex* (format nil " 0x~16r" c-byte))
                        (ltk:append-text *outconsole-ascii* (format nil "~a" (code-char c-byte))))))
-      (when add-nl ;; add a newline after output
-        (ltk:append-newline *outconsole-hex*)
-        (ltk:append-newline *outconsole-ascii*)
+      (when show-end ;; show end after some output
         (ltk:see *outconsole-hex* "end") ;; always show the last line
         (ltk:see *outconsole-ascii* "end"))
       (ltk:after 100 'console-writer))))
